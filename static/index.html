@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PORT-MIS 모선별관제현황</title>
+  <style>
+    /* ── 리셋 & 기본 ──────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3347;
+      --accent:    #3b82f6;
+      --accent2:   #6366f1;
+      --success:   #10b981;
+      --warning:   #f59e0b;
+      --danger:    #ef4444;
+      --text:      #e2e8f0;
+      --text-muted:#8892a4;
+      --radius:    12px;
+      --radius-sm: 8px;
+      --shadow:    0 4px 24px rgba(0,0,0,.4);
+    }
+    body {
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── 헤더 ──────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1e2340 0%, #151929 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,.5);
+    }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .logo-text h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    .logo-text p  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .header-badge {
+      margin-left: auto;
+      background: rgba(59,130,246,.18);
+      border: 1px solid rgba(59,130,246,.35);
+      color: #93c5fd;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── 레이아웃 ───────────────────────────────────── */
+    main { flex: 1; padding: 32px; max-width: 1320px; margin: 0 auto; width: 100%; }
+
+    /* ── 검색 카드 ─────────────────────────────────── */
+    .search-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .search-card h2 { font-size: 15px; font-weight: 600; color: var(--text-muted); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .search-card h2::before { content: ''; width: 4px; height: 18px; background: linear-gradient(var(--accent), var(--accent2)); border-radius: 2px; }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr 220px auto;
+      gap: 14px;
+      align-items: end;
+    }
+    @media (max-width: 640px) {
+      .search-row { grid-template-columns: 1fr; }
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+    .field input, .field select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+    .field input::placeholder { color: var(--text-muted); }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .field select option { background: var(--surface2); }
+
+    /* ── 버튼 ──────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 22px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(59,130,246,.35);
+    }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); filter: brightness(.95); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+    /* ── 스피너 ────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 상태 메시지 ────────────────────────────────── */
+    .status-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      margin-top: 14px;
+    }
+    .status-bar.loading { display: flex; background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.25); color: #93c5fd; }
+    .status-bar.error   { display: flex; background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.25);  color: #fca5a5; }
+    .status-bar.success { display: flex; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25); color: #6ee7b7; }
+
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.85)} }
+
+    /* ── 섹션 제목 ─────────────────────────────────── */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title .count-badge {
+      background: rgba(59,130,246,.2);
+      color: #93c5fd;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* ── 테이블 래퍼 ───────────────────────────────── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .table-card.hidden { display: none; }
+
+    .table-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-scroll { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 11px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid rgba(46,51,71,.6);
+      transition: background .15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(59,130,246,.07); }
+    tbody tr.selected { background: rgba(59,130,246,.15); }
+    tbody tr.clickable { cursor: pointer; }
+    tbody td {
+      padding: 11px 16px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    /* ── 선박 목록 테이블 특수 컬럼 ─────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-blue { background: rgba(59,130,246,.18); color: #93c5fd; }
+    .badge-green { background: rgba(16,185,129,.18); color: #6ee7b7; }
+    .badge-orange { background: rgba(245,158,11,.18); color: #fcd34d; }
+
+    /* ── 방향 배지 (입항/출항) ──────────────────────── */
+    .dir-in  { background: rgba(16,185,129,.18); color: #6ee7b7; }
+    .dir-out { background: rgba(239,68,68,.18);  color: #fca5a5; }
+
+    /* ── 선박정보 그리드 ────────────────────────────── */
+    .ship-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-item { display: flex; flex-direction: column; gap: 4px; }
+    .info-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+    .info-value { font-size: 14px; font-weight: 600; color: var(--text); }
+
+    /* ── 빈 상태 ───────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 56px 24px;
+      color: var(--text-muted);
+    }
+    .empty-icon { font-size: 42px; margin-bottom: 14px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── 푸터 ──────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 16px 32px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ── 반짝이는 행 애니메이션 ─────────────────────── */
+    @keyframes rowFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .row-anim { animation: rowFadeIn .25s ease forwards; }
+
+    /* ── 로딩 오버레이 ──────────────────────────────── */
+    .loading-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(15,17,23,.75);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .loading-overlay.show { display: flex; }
+    .loading-ring {
+      width: 56px; height: 56px;
+      border: 4px solid rgba(59,130,246,.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    .loading-overlay p { color: #93c5fd; font-size: 14px; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<!-- ── 로딩 오버레이 ───────────────────────────────── -->
+<div class="loading-overlay" id="overlay">
+  <div class="loading-ring"></div>
+  <p id="overlayMsg">PORT-MIS에서 데이터를 가져오는 중입니다...</p>
+</div>
+
+<!-- ── 헤더 ────────────────────────────────────────── -->
+<header>
+  <div class="logo-icon">⚓</div>
+  <div class="logo-text">
+    <h1>PORT-MIS 관제현황</h1>
+    <p>모선별 본선관제 내역 조회</p>
+  </div>
+  <span class="header-badge">LIVE</span>
+</header>
+
+<!-- ── 메인 ────────────────────────────────────────── -->
+<main>
+
+  <!-- 검색 카드 -->
+  <div class="search-card">
+    <h2>선박 검색</h2>
+    <div class="search-row">
+      <div class="field">
+        <label>선박명</label>
+        <input type="text" id="vesselInput" placeholder="예) MSC JERSEY" />
+      </div>
+      <div class="field">
+        <label>항구 (청코드)</label>
+        <select id="portSelect">
+          <option value="busan">부산 (020)</option>
+          <option value="incheon">인천 (030)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" id="searchBtn" onclick="doSearch()">
+          <span id="searchSpinner" class="spinner"></span>
+          <span id="searchBtnTxt">🔍 검색</span>
+        </button>
+      </div>
+    </div>
+    <div class="status-bar" id="statusBar">
+      <div class="pulse"></div>
+      <span id="statusMsg"></span>
+    </div>
+  </div>
+
+  <!-- 선박 목록 테이블 -->
+  <div class="table-card hidden" id="vesselListCard">
+    <div class="table-header">
+      <div class="section-title">
+        검색 결과
+        <span class="count-badge" id="vesselCountBadge">0건</span>
+      </div>
+      <span style="font-size:12px;color:var(--text-muted)">행을 클릭하면 관제 내역을 조회합니다</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>선박명</th>
+            <th>선박종류</th>
+            <th>총톤수</th>
+            <th>호출부호</th>
+            <th>선박번호</th>
+            <th>IMO 번호</th>
+            <th>업체명</th>
+          </tr>
+        </thead>
+        <tbody id="vesselTbody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state hidden" id="vesselEmpty">
+      <div class="empty-icon">🚢</div>
+      <p>검색 결과가 없습니다.</p>
+    </div>
+  </div>
+
+  <!-- 본선관제 내역 카드 -->
+  <div class="table-card hidden" id="detailCard">
+    <div class="table-header">
+      <div class="section-title">
+        본선관제 내역
+        <span class="count-badge" id="detailCountBadge">0건</span>
+      </div>
+      <button class="btn btn-ghost" onclick="closeDetail()" style="font-size:12px;padding:6px 14px;">✕ 닫기</button>
+    </div>
+
+    <!-- 선박정보 -->
+    <div class="ship-info-grid" id="shipInfoGrid"></div>
+
+    <!-- 관제 테이블 -->
+    <div class="table-scroll">
+      <table>
+        <thead id="detailThead"></thead>
+        <tbody id="detailTbody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state hidden" id="detailEmpty">
+      <div class="empty-icon">📋</div>
+      <p>관제 내역이 없습니다.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>PORT-MIS 모선별관제현황 조회 시스템 &nbsp;|&nbsp; 데이터 출처: 해양수산부 PORT-MIS</footer>
+
+<script>
+  // ── 상태 ─────────────────────────────────────────
+  let selectedVesselRow = null;
+
+  // ── 유틸 ─────────────────────────────────────────
+  function setStatus(type, msg) {
+    const bar = document.getElementById('statusBar');
+    const txt = document.getElementById('statusMsg');
+    bar.className = 'status-bar ' + type;
+    txt.textContent = msg;
+  }
+  function clearStatus() {
+    document.getElementById('statusBar').className = 'status-bar';
+  }
+  function setOverlay(show, msg = '') {
+    const el = document.getElementById('overlay');
+    el.classList.toggle('show', show);
+    if (msg) document.getElementById('overlayMsg').textContent = msg;
+  }
+  function setSearchLoading(loading) {
+    document.getElementById('searchBtn').disabled = loading;
+    document.getElementById('searchSpinner').style.display = loading ? 'block' : 'none';
+    document.getElementById('searchBtnTxt').textContent = loading ? '검색 중...' : '🔍 검색';
+  }
+
+  // ── 검색 ─────────────────────────────────────────
+  async function doSearch() {
+    const vessel = document.getElementById('vesselInput').value.trim();
+    const port   = document.getElementById('portSelect').value;
+    if (!vessel) { setStatus('error', '선박명을 입력하세요.'); return; }
+
+    setSearchLoading(true);
+    setOverlay(true, 'PORT-MIS에서 선박 목록을 조회하는 중입니다...');
+    setStatus('loading', `"${vessel}" 검색 중입니다. 잠시 기다려 주세요 (30~60초 소요).`);
+    closeDetail();
+    document.getElementById('vesselListCard').classList.add('hidden');
+
+    try {
+      const res  = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vessel_name: vessel, port }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || '검색 중 오류가 발생했습니다.');
+
+      renderVesselList(data.vessels, port);
+      setStatus('success', `${data.count}건의 선박이 조회되었습니다.`);
+
+    } catch (err) {
+      setStatus('error', err.message);
+    } finally {
+      setSearchLoading(false);
+      setOverlay(false);
+    }
+  }
+
+  // ── 선박 목록 렌더링 ─────────────────────────────
+  function renderVesselList(vessels, port) {
+    const card  = document.getElementById('vesselListCard');
+    const tbody = document.getElementById('vesselTbody');
+    const empty = document.getElementById('vesselEmpty');
+    const badge = document.getElementById('vesselCountBadge');
+
+    card.classList.remove('hidden');
+    tbody.innerHTML = '';
+    badge.textContent = vessels.length + '건';
+
+    if (!vessels.length) {
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    vessels.forEach((v, i) => {
+      const tr = document.createElement('tr');
+      tr.className = 'clickable row-anim';
+      tr.style.animationDelay = (i * 40) + 'ms';
+      tr.innerHTML = `
+        <td style="color:var(--text-muted)">${i + 1}</td>
+        <td style="font-weight:600">${esc(v.ship_name)}</td>
+        <td><span class="badge badge-blue">${esc(v.ship_type)}</span></td>
+        <td>${esc(v.tonnage)}</td>
+        <td><span class="badge badge-green">${esc(v.call_sign)}</span></td>
+        <td style="color:var(--text-muted)">${esc(v.ship_no)}</td>
+        <td style="color:var(--text-muted)">${esc(v.imo)}</td>
+        <td>${esc(v.company)}</td>
+      `;
+      tr.addEventListener('click', () => selectVessel(tr, v, port));
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── 선박 선택 → 관제 내역 조회 ──────────────────
+  async function selectVessel(tr, vessel, port) {
+    // 선택 하이라이트
+    document.querySelectorAll('#vesselTbody tr').forEach(r => r.classList.remove('selected'));
+    tr.classList.add('selected');
+    selectedVesselRow = vessel;
+
+    setOverlay(true, `"${vessel.ship_name}" 본선관제 내역을 가져오는 중입니다...`);
+    setStatus('loading', `${vessel.ship_name} 관제 내역 조회 중...`);
+
+    try {
+      const res  = await fetch('/api/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vessel_name: vessel.ship_name,
+          port,
+          call_sign:   vessel.call_sign,
+          row_index:   vessel.row_index,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || '관제 내역 조회 오류');
+
+      renderDetail(vessel, data);
+      setStatus('success', `${vessel.ship_name} 관제 내역 조회 완료.`);
+
+    } catch (err) {
+      setStatus('error', err.message);
+    } finally {
+      setOverlay(false);
+    }
+  }
+
+  // ── 관제 내역 렌더링 ─────────────────────────────
+  function renderDetail(vessel, data) {
+    const card  = document.getElementById('detailCard');
+    const badge = document.getElementById('detailCountBadge');
+    card.classList.remove('hidden');
+
+    // 선박정보
+    const info = data.ship_info || {};
+    const grid = document.getElementById('shipInfoGrid');
+    const infoItems = [
+      { label: '선박명',     value: info.ship_name    || vessel.ship_name },
+      { label: '선사/대리점', value: info.agent        || '' },
+      { label: '선박국적',   value: info.nationality  || '' },
+      { label: '선박종류',   value: info.ship_type    || vessel.ship_type },
+      { label: '국제총톤수', value: info.intl_tonnage || '' },
+      { label: '총톤수',     value: info.gross_tonnage || vessel.tonnage },
+    ];
+    grid.innerHTML = infoItems.map(it => `
+      <div class="info-item">
+        <span class="info-label">${esc(it.label)}</span>
+        <span class="info-value">${esc(it.value) || '<span style="color:var(--text-muted)">-</span>'}</span>
+      </div>
+    `).join('');
+
+    // 테이블
+    const records = data.records || [];
+    badge.textContent = records.length + '건';
+
+    const detailEmpty = document.getElementById('detailEmpty');
+    const thead = document.getElementById('detailThead');
+    const tbody = document.getElementById('detailTbody');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    if (!records.length) {
+      detailEmpty.classList.remove('hidden');
+      return;
+    }
+    detailEmpty.classList.add('hidden');
+
+    // 헤더
+    const headers = Object.keys(records[0]);
+    const priorityHeaders = ['입항횟수', '순번', '구분', '교신시설', '교신시각', '교신', '도선', '신청', '부선호출부호1', '부선호출부호2'];
+    const sortedHeaders = [
+      ...priorityHeaders.filter(h => headers.includes(h)),
+      ...headers.filter(h => !priorityHeaders.includes(h)),
+    ];
+
+    const trHead = document.createElement('tr');
+    sortedHeaders.forEach(h => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+
+    // 데이터 행
+    records.forEach((rec, i) => {
+      const tr = document.createElement('tr');
+      tr.className = 'row-anim';
+      tr.style.animationDelay = (i * 30) + 'ms';
+      sortedHeaders.forEach(h => {
+        const td = document.createElement('td');
+        const val = rec[h] || '';
+        if (h === '구분') {
+          const isIn = val.includes('입항');
+          td.innerHTML = `<span class="badge ${isIn ? 'dir-in' : 'dir-out'}">${esc(val)}</span>`;
+        } else if (h === '입항횟수') {
+          td.innerHTML = `<span class="badge badge-orange">${esc(val)}</span>`;
+        } else {
+          td.textContent = val;
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+
+    // 스크롤
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function closeDetail() {
+    document.getElementById('detailCard').classList.add('hidden');
+    document.querySelectorAll('#vesselTbody tr').forEach(r => r.classList.remove('selected'));
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  // 엔터키 검색
+  document.getElementById('vesselInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+</script>
+</body>
+</html>

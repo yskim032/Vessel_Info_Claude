@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+debug_*.png
+*.png
+test_scraper.py

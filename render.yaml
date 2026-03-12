@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: vessel-info-claude
+    runtime: docker
+    plan: starter
+    envVars:
+      - key: PORT
+        value: 8000
+    healthCheckPath: /health
